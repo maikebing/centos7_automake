@@ -9,7 +9,7 @@ RUN sed -e "s|^mirrorlist=|#mirrorlist=|g" \
 RUN yum update -y &&  yum install git g++ binutils autoconf automake libtool make  pkg-config electric-fence  \
     gdb gdbserver   openssh-server  net-tools lsof telnet passwd \
     libgtk2.0-dev libjpeg-dev libpng12-dev libfreetype6-dev libsqlite3-dev libxml2-dev wget  libconfig-dev libvncserver-dev   -y && \
-    yum  autoremove -y
+     yum clean all
 
 RUN mkdir /var/run/sshd 
 RUN echo 'root:1-q2-w3-e4-r5-t' | chpasswd
