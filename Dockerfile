@@ -1,41 +1,25 @@
-FROM centos/devtoolset-7-toolchain-centos7
-# RUN apt-get -y   -q   update && apt-get  install  -y   -q  apt-transport-https ca-certificates  
-RUN  yum update &&  yum  install  -y   -q   ca-certificates x11-xserver-utils  dbus-x11  libcanberra-gtk3-module    libpci3 libgl1 && \
-    yum install -yq  fonts-arphic-ukai  fonts-arphic-uming  fonts-arphic-bsmi00lp fonts-arphic-gbsn00lp  fonts-arphic-gkai00mp  fonts-wqy-zenhei  latex-cjk-chinese-arphic-bkai00mp  latex-cjk-chinese-arphic-bsmi00lp  latex-cjk-chinese-arphic-gbsn00lp  latex-cjk-chinese-arphic-gkai00mp  xfonts-intl-chinese  xfonts-intl-chinese-big fonts-cns11643-kai  fonts-cns11643-sung  fonts-moe-standard-kai  fonts-moe-standard-song && \
-    yum install git g++ binutils autoconf automake libtool make cmake pkg-config electric-fence   -yq && \
-    yum install libgtk2.0-dev  -yq && \
-    yum install libjpeg-dev libpng-dev libfreetype6-dev libharfbuzz-dev  -yq && \
-    yum install libinput-dev libdrm-dev libsqlite3-dev libxml2-dev  sudo  libssl-dev -yq &&  \
-    yum install  libconfig-dev  -yq && \
-    yum install  openssh-server -yq  && \
-yum install  gdb gdbserver -yq  && \
-   yum install libpq-dev -yq && \
-    yum install busybox -yq && \
-    yum clean && yum autoremove   && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*	
+FROM centos:centos7.6.1810
+USER root
+RUN sed -e "s|^mirrorlist=|#mirrorlist=|g" \
+    -e "s|^#baseurl=http://mirror.centos.org/centos/\$releasever|baseurl=https://mirrors.tuna.tsinghua.edu.cn/centos-vault/7.6.1810|g" \
+    -e "s|^#baseurl=http://mirror.centos.org/\$contentdir/\$releasever|baseurl=https://mirrors.tuna.tsinghua.edu.cn/centos-vault/7.6.1810|g" \
+    -i.bak \
+    /etc/yum.repos.d/CentOS-*.repo
 
-RUN   git clone https://gitlab.fmsoft.cn/VincentWei/build-minigui-5.0  && \
-      cd build-minigui-5.0/ && cp config.sh myconfig.sh && ./fetch-all.sh   && \
-    #   sed -i -e 's/mg-tests mg-samples mg-demos cell-phone-ux-demo/mg-samples mg-demos cell-phone-ux-demo/g' build-minigui.sh && \
-      ./build-deps.sh && ./build-minigui.sh ths &&  \
-      cd .. && rm  ./build-minigui-5.0 -rf
-
- 
-RUN cd ~/ && \
-	wget https://curl.haxx.se/download/curl-7.67.0.tar.gz && \
-	tar xzf curl-7.67.0.tar.gz &&  cd ~/curl-7.67.0/ && \
-	./buildconf && ./configure  && make  && make install && \
-    rm  ~/curl-7.67.0/ -rf
-
+RUN yum update -y &&  yum install git g++ binutils autoconf automake libtool make  pkg-config electric-fence  \
+    gdb gdbserver   openssh-server  net-tools lsof telnet passwd \
+    libgtk2.0-dev libjpeg-dev libpng12-dev libfreetype6-dev libsqlite3-dev libxml2-dev wget  libconfig-dev libvncserver-dev   -y && \
+    yum  autoremove -y
 
 RUN mkdir /var/run/sshd 
 RUN echo 'root:1-q2-w3-e4-r5-t' | chpasswd
+RUN ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key && ssh-keygen -t ecdsa -f /etc/ssh/ssh_host_ecdsa_key -N "" && ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N ""
+
 RUN sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
 # SSH login fix. Otherwise user is kicked off after login
 RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
-
-ENV NOTVISIBLE "in users profile"
-RUN echo "export VISIBLE=now" >> /etc/profile
+RUN mkdir -p /root/.ssh && chown root.root /root && chmod 700 /root/.ssh
 
 EXPOSE 22
 CMD ["/usr/sbin/sshd", "-D"]
